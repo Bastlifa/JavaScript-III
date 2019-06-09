@@ -13,7 +13,7 @@
 
 // code example for Window Binding
 
-console.log(this.name); //works in codepen, undefined in node, because no window?
+console.log(this.innerWidth); //test using index.html and live extension, check console.
 
 // Principle 2
 
