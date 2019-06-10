@@ -64,7 +64,7 @@ function Humanoid(hmndAttrs)
 
 // Test you work by un-commenting these 3 objects and the list of console logs below:
 
-/*
+
   const mage = new Humanoid({
     createdAt: new Date(),
     dimensions: {
@@ -125,9 +125,77 @@ function Humanoid(hmndAttrs)
   console.log(archer.greet()); // Lilith offers a greeting in Elvish.
   console.log(mage.takeDamage()); // Bruce took damage.
   console.log(swordsman.destroy()); // Sir Mustachio was removed from the game.
-*/
 
+  
   // Stretch task: 
   // * Create Villain and Hero constructor functions that inherit from the Humanoid constructor function.  
-  // * Give the Hero and Villains different methods that could be used to remove health points from objects which could result in destruction if health gets to 0 or drops below 0;
+  // * Give the Hero and Villains different methods that could be used to 
+  //   remove health points from objects which could result in destruction if health gets to 0 or drops below 0;
   // * Create two new objects, one a villain and one a hero and fight it out with methods!
+
+
+
+function Villain(vlnAttrs)
+{
+  Humanoid.call(this, vlnAttrs);
+  this.xp = vlnAttrs.xp;
+  this.attack = function(vlnAttrs, heroObj)
+    {
+      let dmgCalc = vlnAttrs.attackDmg();
+      let attResolve = function()
+      {
+        return (Math.floor(1+Math.random()*19) >= heroObj.AC) ? `Hit for ${dmgCalc}!` : `Miss!`;
+      }
+      console.log(`${this.name} attacks! \n${attResolve()}`);
+      heroObj.takeDamage(dmgCalc);
+    }
+}
+
+function Hero(heroAttrs)
+{
+  Humanoid.call(this, heroAttrs);
+  this.xpTot = 0;
+  this.level = 1;
+  this.strength = heroAttrs.strength;
+  this.agility = heroAttrs.agility;
+  this.intellect = heroAttrs.intellect;
+  this.gold = heroAttrs.gold;
+  this.attacks = []
+  heroAttrs.weapons.forEach(
+    function(weapon, Vln)
+    {
+      let hitBonus = 0;
+      let damageRange = 0;
+      let damageBonus = 0;
+      if (rangedWepsObjs.map(wep => wep.name).includes(weapon))
+      {
+        hitBonus = this.agility + this.level + rangedWepsObjs[rangedWepsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
+      }
+      else if (magicImplementsObjs.map(wep => wep.name).includes(weapon))
+      {
+        hitBonus = this.intellect + this.level + magicImplementsObjs[magicImplementsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
+      }
+      else
+      {
+        hitBonus = this.intellect + this.level + meleeWepsObjs[meleeWepsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
+      }
+
+      if (magicImplementsObjs.map(wep => wep.name).includes(weapon))
+      {
+        damageRange = magicImplementsObjs[magicImplementsObjs.map(wep => wep.name).indexOf(weapon)].dmg;
+        damageBonus = this.intellect + magicImplementsObjs[magicImplementsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
+      }
+      else
+      {
+        damageRange = meleeWepsObjs[meleeWepsObjs.map(wep => wep.name).indexOf(weapon)].dmg;
+        damageBonus = this.strength + meleeWepsObjs[meleeWepsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
+      }
+      this.attacks.push(weapon);
+      this.attacks.push(function()
+      {
+        console.log(`${this.name} attacks with ${weapon} and ${}`)
+      });
+    }
+  );
+}
+
