@@ -1,9 +1,11 @@
 /*
-  Object oriented design is commonly used in video games.  For this part of the assignment you will be implementing several constructor functions with their correct inheritance hierarchy.
+  Object oriented design is commonly used in video games. 
+  For this part of the assignment you will be implementing several constructor functions with their correct inheritance hierarchy.
 
   In this file you will be creating three constructor functions: GameObject, CharacterStats, Humanoid.  
 
-  At the bottom of this file are 3 objects that all end up inheriting from Humanoid.  Use the objects at the bottom of the page to test your constructor functions.
+  At the bottom of this file are 3 objects that all end up inheriting from Humanoid. 
+  Use the objects at the bottom of the page to test your constructor functions.
   
   Each constructor function has unique properties and methods that are defined in their block comments below:
 */
@@ -15,6 +17,13 @@
   * dimensions (These represent the character's size in the video game)
   * destroy() // prototype method that returns: `${this.name} was removed from the game.`
 */
+function GameObject(gObjAttrs)
+{
+  this.createdAt = gObjAttrs.createdAt;
+  this.name = gObjAttrs.name;
+  this.dimensions = gObjAttrs.dimensions;
+}
+GameObject.prototype.destroy = function() {return `${this.name} was removed from the game`;};
 
 /*
   === CharacterStats ===
@@ -22,6 +31,13 @@
   * takeDamage() // prototype method -> returns the string '<object name> took damage.'
   * should inherit destroy() from GameObject's prototype
 */
+function CharacterStats(charStatAttrs)
+{
+  GameObject.call(this, charStatAttrs);
+  this.healthPoints = charStatAttrs.healthPoints;
+}
+CharacterStats.prototype = Object.create(GameObject.prototype);
+CharacterStats.prototype.takeDamage = function () {return `${this.name} took damage`;};
 
 /*
   === Humanoid (Having an appearance or character resembling that of a human.) ===
@@ -32,7 +48,16 @@
   * should inherit destroy() from GameObject through CharacterStats
   * should inherit takeDamage() from CharacterStats
 */
- 
+function Humanoid(hmndAttrs)
+{
+  CharacterStats.call(this, hmndAttrs);
+  this.team = hmndAttrs.team;
+  this.weapons = hmndAttrs.weapons;
+  this.language = hmndAttrs.language;
+}
+Humanoid.prototype = Object.create(CharacterStats.prototype);
+Humanoid.prototype.greet = function() {return `${this.name} offers a greeting in ${this.language}`;};
+
 /*
   * Inheritance chain: GameObject -> CharacterStats -> Humanoid
   * Instances of Humanoid should have all of the same properties as CharacterStats and GameObject.
@@ -41,7 +66,7 @@
 
 // Test you work by un-commenting these 3 objects and the list of console logs below:
 
-/*
+
   const mage = new Humanoid({
     createdAt: new Date(),
     dimensions: {
@@ -102,9 +127,227 @@
   console.log(archer.greet()); // Lilith offers a greeting in Elvish.
   console.log(mage.takeDamage()); // Bruce took damage.
   console.log(swordsman.destroy()); // Sir Mustachio was removed from the game.
-*/
 
+  
   // Stretch task: 
   // * Create Villain and Hero constructor functions that inherit from the Humanoid constructor function.  
-  // * Give the Hero and Villains different methods that could be used to remove health points from objects which could result in destruction if health gets to 0 or drops below 0;
+  // * Give the Hero and Villains different methods that could be used to 
+  //   remove health points from objects which could result in destruction if health gets to 0 or drops below 0;
   // * Create two new objects, one a villain and one a hero and fight it out with methods!
+
+
+
+function Villain(vlnAttrs)
+{
+  Humanoid.call(this, vlnAttrs);
+  this.xp = vlnAttrs.xp;
+  this.AC = vlnAttrs.AC;
+  this.hitBon = vlnAttrs.hitBon;
+  this.dmgBon = vlnAttrs.dmgBon;
+  this.dmgDice = vlnAttrs.dmgDice;
+}
+Villain.prototype = Object.create(Humanoid.prototype);
+Villain.prototype.attack = function(heroObj)
+  {
+    let dmgCalc = function()
+    {
+      let dmg = 0;
+      for(let i=0; i < this.dmgDice; i++)
+      {
+        dmg +=Math.floor(1 + Math.random()*6);
+      }
+      dmg += this.dmgBon;
+      return dmg;
+    } 
+      
+    let attResolve = function()
+    {
+      let hitRoll = this.hitBon + Math.floor(1+Math.random()*19);
+      // console.log(hitRoll);
+      if (hitRoll >= heroObj.AC)
+      {
+        let dmg = dmgCalc.call(this);
+        heroObj.healthPoints -= dmg;
+        if (heroObj.healthPoints <= 0)
+        {
+          console.log(`${this.name} slayed the hero!\n`); 
+          console.log(`hero hp: ${heroObj.healthPoints}\n`);
+          console.log(heroObj.destroy());
+        }
+        else
+        {
+          console.log(`${this.name} hit the hero for ${dmg}!\n`); 
+          console.log(`hero hp: ${heroObj.healthPoints}\n`);
+        } 
+      }
+      else
+      {
+        console.log(`${this.name} missed the hero!\n`); 
+      }
+    }
+    attResolve.call(this);
+  }
+
+console.log("\n\n*******************************\n     Greentooth Vs Dragon!\n\n");
+
+function Hero(heroAttrs)
+{
+  Humanoid.call(this, heroAttrs);
+  this.xpTot = 0;
+  this.level = 1;
+  this.strength = heroAttrs.strength;
+  this.agility = heroAttrs.agility;
+  this.intellect = heroAttrs.intellect;
+  this.gold = heroAttrs.gold;
+  this.AC = heroAttrs.AC;
+  this.weapons = heroAttrs.weapons; 
+  this.limit = 0;
+  this.hitBon = heroAttrs.hitBon;
+  this.dmgDice = heroAttrs.dmgDice;
+  this.dmgBon = heroAttrs.dmgBon;
+}
+Hero.prototype = Object.create(Humanoid.prototype);
+Hero.prototype.mainAttack = function(vlnObj)
+{
+  let limitString = ""
+  {
+    let dmgCalc = function()
+    {
+      let dmg = 0;
+
+      if(this.limit < 4)
+      {
+        for(let i=0; i <this.dmgDice; i++)
+        {
+          dmg +=Math.floor(1 + Math.random()*6);
+        }
+        this.limit +=1;
+      }
+      else 
+      {
+        dmg += this.dmgDice*6; limit = 0;
+        limitString = "with a limit attack ";
+      }
+      
+      dmg += this.dmgBon;
+      
+      return dmg;
+    } 
+      
+    let attResolve = function()
+    {
+      
+      let hitRoll = this.hitBon + Math.floor(1+Math.random()*19);
+      // console.log(hitRoll);
+      if (hitRoll >= vlnObj.AC)
+      {
+        let dmg = dmgCalc.call(this);
+        vlnObj.healthPoints -= dmg;
+        if (vlnObj.healthPoints <= 0)
+        {
+          console.log(`${this.name} slayed the ${vlnObj.name}!\n`); 
+          console.log(`${vlnObj.name} hp: ${vlnObj.healthPoints}\n`);
+          console.log(vlnObj.destroy());
+        }
+        else
+        {
+          console.log(`${this.name} hit the ${vlnObj.name} ${limitString}for ${dmg}!\n`); 
+          console.log(`${vlnObj.name} hp: ${vlnObj.healthPoints}\n`);
+        } 
+      }
+      else
+      {
+        console.log(`${this.name} missed the ${vlnObj.name}!\n`); 
+      }
+    }
+    attResolve.call(this);
+  }
+}
+
+let dragon = new Villain(
+  {
+    createdAt: new Date(),
+    dimensions: {
+      length: 5,
+      width: 3,
+      height: 4
+    },
+    healthPoints: 150,
+    name: "Dragon",
+    team: "Dragonkin",
+    weapons: ["Claw", "Bite", "Breath"],
+    hitBon: 8,
+    dmgDice: 2,
+    dmgBon: 3,
+    AC: 14,
+    language: "Draconic",
+    xp: 1000
+  }
+);
+
+let greenTooth = new Hero(
+{
+  createdAt: new Date(),
+  strength: 5,
+  agility: 3,
+  intellect: 2,
+  gold: 0,
+  AC: 16,
+  dimensions:
+  {
+    length: 1,
+    width: 2,
+    height: 4
+  },
+  healthPoints: 35,
+  name: "Greentooth",
+  team: "Small Town Bumpkins",
+  weapons: ["Dagger", "Fist"],
+  language: "Common",
+  hitBon: 9,
+  dmgDice: 5,
+  dmgBon: 5
+});
+
+//fight!
+// let greenDragToggle = 0;
+// while ((greenTooth.healthPoints > 0) && (dragon.healthPoints > 0))
+// {
+//   if (greenDragToggle === 0)
+//   {
+//     greenTooth.mainAttack(dragon);
+//   }
+//   else
+//   {
+//     dragon.attack(greenTooth)
+//   }
+//   greenDragToggle === 0 ? greenDragToggle = 1 : greenDragToggle = 0;
+// }
+
+let greenDragToggle = 0;
+function fight()
+{
+  let attWait = setInterval(() => {
+    if (greenTooth.healthPoints > 0 && dragon.healthPoints > 0)
+    {
+      if (greenDragToggle === 0)
+      {
+        greenTooth.mainAttack.call(greenTooth, dragon);
+        console.log('-----------------------\n');
+      }
+      else
+      {
+        dragon.attack.call(dragon, greenTooth);
+        console.log('-----------------------\n');
+      }
+      greenDragToggle === 0 ? greenDragToggle = 1 : greenDragToggle = 0;
+    }
+    else 
+    {
+      if (greenTooth.healthPoints <= 0) {console.log("Game Over");}
+      else                              {console.log("Victory!");}
+      clearInterval(attWait);
+    }
+  }, 1000);
+}
+fight();
