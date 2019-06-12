@@ -22,8 +22,8 @@ function GameObject(gObjAttrs)
   this.createdAt = gObjAttrs.createdAt;
   this.name = gObjAttrs.name;
   this.dimensions = gObjAttrs.dimensions;
-  this.destroy = function() {return `${this.name} was removed from the game`;};
 }
+GameObject.prototype.destroy = function() {return `${this.name} was removed from the game`;};
 
 /*
   === CharacterStats ===
@@ -35,8 +35,9 @@ function CharacterStats(charStatAttrs)
 {
   GameObject.call(this, charStatAttrs);
   this.healthPoints = charStatAttrs.healthPoints;
-  this.takeDamage = function() {return `${this.name} took damage`;};
 }
+CharacterStats.prototype = Object.create(GameObject.prototype);
+CharacterStats.prototype.takeDamage = function () {return `${this.name} took damage`;};
 
 /*
   === Humanoid (Having an appearance or character resembling that of a human.) ===
@@ -53,8 +54,9 @@ function Humanoid(hmndAttrs)
   this.team = hmndAttrs.team;
   this.weapons = hmndAttrs.weapons;
   this.language = hmndAttrs.language;
-  this.greet = function() {return `${this.name} offers a greeting in ${this.language}`;};
 }
+Humanoid.prototype = Object.create(CharacterStats.prototype);
+Humanoid.prototype.greet = function() {return `${this.name} offers a greeting in ${this.language}`;};
 
 /*
   * Inheritance chain: GameObject -> CharacterStats -> Humanoid
@@ -140,47 +142,51 @@ function Villain(vlnAttrs)
   Humanoid.call(this, vlnAttrs);
   this.xp = vlnAttrs.xp;
   this.AC = vlnAttrs.AC;
-  this.attack = function(heroObj)
+  this.hitBon = vlnAttrs.hitBon;
+  this.dmgBon = vlnAttrs.dmgBon;
+  this.dmgDice = vlnAttrs.dmgDice;
+}
+Villain.prototype = Object.create(Humanoid.prototype);
+Villain.prototype.attack = function(heroObj)
+  {
+    let dmgCalc = function()
     {
-      let dmgCalc = function()
+      let dmg = 0;
+      for(let i=0; i < this.dmgDice; i++)
       {
-        let dmg = 0;
-        for(let i=0; i < vlnAttrs.dmgDice; i++)
-        {
-          dmg +=Math.floor(1 + Math.random()*6);
-        }
-        dmg += vlnAttrs.dmgBon;
-        return dmg;
-      } 
-        
-      let attResolve = function()
+        dmg +=Math.floor(1 + Math.random()*6);
+      }
+      dmg += this.dmgBon;
+      return dmg;
+    } 
+      
+    let attResolve = function()
+    {
+      let hitRoll = this.hitBon + Math.floor(1+Math.random()*19);
+      // console.log(hitRoll);
+      if (hitRoll >= heroObj.AC)
       {
-        let hitRoll = vlnAttrs.hitBon + Math.floor(1+Math.random()*19);
-        // console.log(hitRoll);
-        if (hitRoll >= heroObj.AC)
+        let dmg = dmgCalc.call(this);
+        heroObj.healthPoints -= dmg;
+        if (heroObj.healthPoints <= 0)
         {
-          let dmg = dmgCalc();
-          heroObj.healthPoints -= dmg;
-          if (heroObj.healthPoints <= 0)
-          {
-            console.log(`${vlnAttrs.name} slayed the hero!\n`); 
-            console.log(`hero hp: ${heroObj.healthPoints}\n`);
-            console.log(heroObj.destroy());
-          }
-          else
-          {
-            console.log(`${vlnAttrs.name} hit the hero for ${dmg}!\n`); 
-            console.log(`hero hp: ${heroObj.healthPoints}\n`);
-          } 
+          console.log(`${this.name} slayed the hero!\n`); 
+          console.log(`hero hp: ${heroObj.healthPoints}\n`);
+          console.log(heroObj.destroy());
         }
         else
         {
-          console.log(`${vlnAttrs.name} missed the hero!\n`); 
-        }
+          console.log(`${this.name} hit the hero for ${dmg}!\n`); 
+          console.log(`hero hp: ${heroObj.healthPoints}\n`);
+        } 
       }
-      attResolve();
+      else
+      {
+        console.log(`${this.name} missed the hero!\n`); 
+      }
     }
-}
+    attResolve.call(this);
+  }
 
 console.log("\n\n*******************************\n     Greentooth Vs Dragon!\n\n");
 
@@ -199,63 +205,62 @@ function Hero(heroAttrs)
   this.hitBon = heroAttrs.hitBon;
   this.dmgDice = heroAttrs.dmgDice;
   this.dmgBon = heroAttrs.dmgBon;
-  this.mainAttack = function(vlnObj)
+}
+Hero.prototype = Object.create(Humanoid.prototype);
+Hero.prototype.mainAttack = function(vlnObj)
+{
+  let limitString = ""
   {
-    let limit = this.limit;
-    let limitString = ""
+    let dmgCalc = function()
     {
-      let dmgCalc = function()
-      {
-        let dmg = 0;
+      let dmg = 0;
 
-        if(limit < 4)
-        {
-          for(let i=0; i <heroAttrs.dmgDice; i++)
-          {
-            dmg +=Math.floor(1 + Math.random()*6);
-          }
-          limit +=1;
-        }
-        else 
-        {
-          dmg += heroAttrs.dmgDice*6; limit = 0;
-          limitString = "with a limit attack ";
-        }
-        
-        dmg += heroAttrs.dmgBon;
-        
-        return dmg;
-      } 
-        
-      let attResolve = function()
+      if(this.limit < 4)
       {
-        
-        let hitRoll = heroAttrs.hitBon + Math.floor(1+Math.random()*19);
-        // console.log(hitRoll);
-        if (hitRoll >= vlnObj.AC)
+        for(let i=0; i <this.dmgDice; i++)
         {
-          let dmg = dmgCalc();
-          vlnObj.healthPoints -= dmg;
-          if (vlnObj.healthPoints <= 0)
-          {
-            console.log(`${heroAttrs.name} slayed the ${vlnObj.name}!\n`); 
-            console.log(`Villain hp: ${vlnObj.healthPoints}\n`);
-            console.log(vlnObj.destroy());
-          }
-          else
-          {
-            console.log(`${heroAttrs.name} hit the ${vlnObj.name} ${limitString}for ${dmg}!\n`); 
-            console.log(`Villain hp: ${vlnObj.healthPoints}\n`);
-          } 
+          dmg +=Math.floor(1 + Math.random()*6);
+        }
+        this.limit +=1;
+      }
+      else 
+      {
+        dmg += this.dmgDice*6; limit = 0;
+        limitString = "with a limit attack ";
+      }
+      
+      dmg += this.dmgBon;
+      
+      return dmg;
+    } 
+      
+    let attResolve = function()
+    {
+      
+      let hitRoll = this.hitBon + Math.floor(1+Math.random()*19);
+      // console.log(hitRoll);
+      if (hitRoll >= vlnObj.AC)
+      {
+        let dmg = dmgCalc.call(this);
+        vlnObj.healthPoints -= dmg;
+        if (vlnObj.healthPoints <= 0)
+        {
+          console.log(`${this.name} slayed the ${vlnObj.name}!\n`); 
+          console.log(`${vlnObj.name} hp: ${vlnObj.healthPoints}\n`);
+          console.log(vlnObj.destroy());
         }
         else
         {
-          console.log(`${heroAttrs.name} missed the ${vlnObj.name}!\n`); 
-        }
+          console.log(`${this.name} hit the ${vlnObj.name} ${limitString}for ${dmg}!\n`); 
+          console.log(`${vlnObj.name} hp: ${vlnObj.healthPoints}\n`);
+        } 
       }
-      attResolve();
-      this.limit = limit;
+      else
+      {
+        console.log(`${this.name} missed the ${vlnObj.name}!\n`); 
+      }
     }
+    attResolve.call(this);
   }
 }
 
@@ -327,12 +332,12 @@ function fight()
     {
       if (greenDragToggle === 0)
       {
-        greenTooth.mainAttack(dragon);
+        greenTooth.mainAttack.call(greenTooth, dragon);
         console.log('-----------------------\n');
       }
       else
       {
-        dragon.attack(greenTooth);
+        dragon.attack.call(dragon, greenTooth);
         console.log('-----------------------\n');
       }
       greenDragToggle === 0 ? greenDragToggle = 1 : greenDragToggle = 0;
