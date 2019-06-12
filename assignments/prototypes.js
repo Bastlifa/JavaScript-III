@@ -139,17 +139,50 @@ function Villain(vlnAttrs)
 {
   Humanoid.call(this, vlnAttrs);
   this.xp = vlnAttrs.xp;
-  this.attack = function(vlnAttrs, heroObj)
+  this.AC = vlnAttrs.AC;
+  this.attack = function(heroObj)
     {
-      let dmgCalc = vlnAttrs.attackDmg();
+      let dmgCalc = function()
+      {
+        let dmg = 0;
+        for(let i=0; i < vlnAttrs.dmgDice; i++)
+        {
+          dmg +=Math.floor(1 + Math.random()*6);
+        }
+        dmg += vlnAttrs.dmgBon;
+        return dmg;
+      } 
+        
       let attResolve = function()
       {
-        return (Math.floor(1+Math.random()*19) >= heroObj.AC) ? `Hit for ${dmgCalc}!` : `Miss!`;
+        let hitRoll = vlnAttrs.hitBon + Math.floor(1+Math.random()*19);
+        // console.log(hitRoll);
+        if (hitRoll >= heroObj.AC)
+        {
+          let dmg = dmgCalc();
+          heroObj.healthPoints -= dmg;
+          if (heroObj.healthPoints <= 0)
+          {
+            console.log(`${vlnAttrs.name} slayed the hero!\n`); 
+            console.log(`hero hp: ${heroObj.healthPoints}\n`);
+            console.log(heroObj.destroy());
+          }
+          else
+          {
+            console.log(`${vlnAttrs.name} hit the hero for ${dmg}!\n`); 
+            console.log(`hero hp: ${heroObj.healthPoints}\n`);
+          } 
+        }
+        else
+        {
+          console.log(`${vlnAttrs.name} missed the hero!\n`); 
+        }
       }
-      console.log(`${this.name} attacks! \n${attResolve()}`);
-      heroObj.takeDamage(dmgCalc);
+      attResolve();
     }
 }
+
+console.log("\n\n*******************************\n     Greentooth Vs Dragon!\n\n");
 
 function Hero(heroAttrs)
 {
@@ -160,42 +193,156 @@ function Hero(heroAttrs)
   this.agility = heroAttrs.agility;
   this.intellect = heroAttrs.intellect;
   this.gold = heroAttrs.gold;
-  this.attacks = []
-  heroAttrs.weapons.forEach(
-    function(weapon, Vln)
+  this.AC = heroAttrs.AC;
+  this.weapons = heroAttrs.weapons; 
+  this.limit = 0;
+  this.hitBon = heroAttrs.hitBon;
+  this.dmgDice = heroAttrs.dmgDice;
+  this.dmgBon = heroAttrs.dmgBon;
+  this.mainAttack = function(vlnObj)
+  {
+    let limit = this.limit;
+    let limitString = ""
     {
-      let hitBonus = 0;
-      let damageRange = 0;
-      let damageBonus = 0;
-      if (rangedWepsObjs.map(wep => wep.name).includes(weapon))
+      let dmgCalc = function()
       {
-        hitBonus = this.agility + this.level + rangedWepsObjs[rangedWepsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
-      }
-      else if (magicImplementsObjs.map(wep => wep.name).includes(weapon))
-      {
-        hitBonus = this.intellect + this.level + magicImplementsObjs[magicImplementsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
-      }
-      else
-      {
-        hitBonus = this.intellect + this.level + meleeWepsObjs[meleeWepsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
-      }
+        let dmg = 0;
 
-      if (magicImplementsObjs.map(wep => wep.name).includes(weapon))
+        if(limit < 4)
+        {
+          for(let i=0; i <heroAttrs.dmgDice; i++)
+          {
+            dmg +=Math.floor(1 + Math.random()*6);
+          }
+          limit +=1;
+        }
+        else 
+        {
+          dmg += heroAttrs.dmgDice*6; limit = 0;
+          limitString = "with a limit attack ";
+        }
+        
+        dmg += heroAttrs.dmgBon;
+        
+        return dmg;
+      } 
+        
+      let attResolve = function()
       {
-        damageRange = magicImplementsObjs[magicImplementsObjs.map(wep => wep.name).indexOf(weapon)].dmg;
-        damageBonus = this.intellect + magicImplementsObjs[magicImplementsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
+        
+        let hitRoll = heroAttrs.hitBon + Math.floor(1+Math.random()*19);
+        // console.log(hitRoll);
+        if (hitRoll >= vlnObj.AC)
+        {
+          let dmg = dmgCalc();
+          vlnObj.healthPoints -= dmg;
+          if (vlnObj.healthPoints <= 0)
+          {
+            console.log(`${heroAttrs.name} slayed the ${vlnObj.name}!\n`); 
+            console.log(`Villain hp: ${vlnObj.healthPoints}\n`);
+            console.log(vlnObj.destroy());
+          }
+          else
+          {
+            console.log(`${heroAttrs.name} hit the ${vlnObj.name} ${limitString}for ${dmg}!\n`); 
+            console.log(`Villain hp: ${vlnObj.healthPoints}\n`);
+          } 
+        }
+        else
+        {
+          console.log(`${heroAttrs.name} missed the ${vlnObj.name}!\n`); 
+        }
       }
-      else
-      {
-        damageRange = meleeWepsObjs[meleeWepsObjs.map(wep => wep.name).indexOf(weapon)].dmg;
-        damageBonus = this.strength + meleeWepsObjs[meleeWepsObjs.map(wep => wep.name).indexOf(weapon)].bonus;
-      }
-      this.attacks.push(weapon);
-      this.attacks.push(function()
-      {
-        console.log(`${this.name} attacks with ${weapon} and ${}`)
-      });
+      attResolve();
+      this.limit = limit;
     }
-  );
+  }
 }
 
+let dragon = new Villain(
+  {
+    createdAt: new Date(),
+    dimensions: {
+      length: 5,
+      width: 3,
+      height: 4
+    },
+    healthPoints: 150,
+    name: "Dragon",
+    team: "Dragonkin",
+    weapons: ["Claw", "Bite", "Breath"],
+    hitBon: 8,
+    dmgDice: 2,
+    dmgBon: 3,
+    AC: 14,
+    language: "Draconic",
+    xp: 1000
+  }
+);
+
+let greenTooth = new Hero(
+{
+  createdAt: new Date(),
+  strength: 5,
+  agility: 3,
+  intellect: 2,
+  gold: 0,
+  AC: 16,
+  dimensions:
+  {
+    length: 1,
+    width: 2,
+    height: 4
+  },
+  healthPoints: 35,
+  name: "Greentooth",
+  team: "Small Town Bumpkins",
+  weapons: ["Dagger", "Fist"],
+  language: "Common",
+  hitBon: 9,
+  dmgDice: 5,
+  dmgBon: 5
+});
+
+//fight!
+// let greenDragToggle = 0;
+// while ((greenTooth.healthPoints > 0) && (dragon.healthPoints > 0))
+// {
+//   if (greenDragToggle === 0)
+//   {
+//     greenTooth.mainAttack(dragon);
+//   }
+//   else
+//   {
+//     dragon.attack(greenTooth)
+//   }
+//   greenDragToggle === 0 ? greenDragToggle = 1 : greenDragToggle = 0;
+// }
+
+let greenDragToggle = 0;
+function fight()
+{
+  let attWait = setInterval(() => {
+    if (greenTooth.healthPoints > 0 && dragon.healthPoints > 0)
+    {
+      if (greenDragToggle === 0)
+      {
+        greenTooth.mainAttack(dragon);
+        console.log('-----------------------\n');
+      }
+      else
+      {
+        dragon.attack(greenTooth);
+        console.log('-----------------------\n');
+      }
+      greenDragToggle === 0 ? greenDragToggle = 1 : greenDragToggle = 0;
+    }
+    else 
+    {
+      if (greenTooth.healthPoints <= 0) {console.log("Game Over");}
+      else                              {console.log("Victory!");}
+      clearInterval(attWait);
+    }
+  }, 1000);
+}
+fight();
